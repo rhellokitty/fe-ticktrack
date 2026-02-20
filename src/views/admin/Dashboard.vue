@@ -1,21 +1,86 @@
 <script setup>
-// TODO: Import necessary dependencies
-// Hint: You'll need to import from vue, chart.js/auto, pinia, feather-icons, lodash, and luxon
+import { onMounted, watch } from 'vue';
+import { Chart } from 'chart.js/auto';
+import { useDashboardStore } from '@/stores/dashboard';
+import { useTicketStore } from '@/stores/ticket';
+import { storeToRefs } from 'pinia';
+import feather from 'feather-icons';
+import { capitalize } from 'lodash';
+import { DateTime } from 'luxon';
 
-// TODO: Initialize dashboard store and get necessary refs
-// Hint: Use useDashboardStore() and storeToRefs()
+const dashboardStore = useDashboardStore()
+const { statistic } = storeToRefs(dashboardStore)
+const { fetchStatistics } = dashboardStore
 
-// TODO: Initialize ticket store and get necessary refs
-// Hint: Use useTicketStore() and storeToRefs()
+const ticketStore = useTicketStore()
+const { tickets } = storeToRefs(ticketStore)
+const { fetchTickets } = ticketStore
 
-// TODO: Create toggleTicketMenu function
-// Hint: This should toggle the showMenu property of a ticket
+const toggleTicketMenu = (ticket) => {
+    ticket.showMenu = !ticket.showMenu
+}
 
-// TODO: Create chart variable and watch effect
-// Hint: Watch statistic changes and update chart data
+let chart = null
 
-// TODO: Implement onMounted hook
-// Hint: Fetch tickets and statistics, initialize chart with status distribution data, initialize feather icons
+watch(statistic, () => {
+    if (statistic.value && chart) {
+        chart.data.datasets[0].data = [
+            statistic.value.status_distribution?.open,
+            statistic.value.status_distribution?.in_progress,
+            statistic.value.status_distribution?.resolved,
+            statistic.value.status_distribution?.rejected
+        ]
+        chart.update()
+    }
+}, { deep: true })
+
+onMounted(async () => {
+    await fetchTickets()
+    await fetchStatistics()
+
+    const statusCtx = document.getElementById('statusChart')?.getContext('2d')
+
+    if (statusCtx && statistic.value) {
+        chart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['open', 'onprogress', 'resolved', 'rejected'],
+                datasets: [{
+                    data: [
+                        statistic.value.status_distribution?.open,
+                        statistic.value.status_distribution?.in_progress,
+                        statistic.value.status_distribution?.resolved,
+                        statistic.value.status_distribution?.rejected
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                cutout: '70%'
+            }
+        })
+    }
+    feather.replace()
+})
+
+// LANJUTKAN PADA MENIT 1:53:00
 
 </script>
 
